@@ -45,7 +45,7 @@ def draw_axis(img, corners, imgpts):
 
 def estimate_pose(image, size, length, camera_matrix, dist_coeffs):
     # Setting criteria for corner location refinement
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01)
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     # Setting object points
     points_per_row, points_per_column = size
     objectPoints = np.zeros((points_per_row * points_per_column, 3))
@@ -69,8 +69,6 @@ def estimate_pose(image, size, length, camera_matrix, dist_coeffs):
             # Obtaining translation and rotation components of the pose
             T_target2cam = tvec
             R_target2cam = cv2.Rodrigues(rvec)[0]
-            print(R_target2cam)
-            print(T_target2cam)
             R_target2cam = tfs.quaternions.mat2quat(R_target2cam)
             # Transforming the pose into tf message
             tf = TFMessage()
@@ -118,7 +116,7 @@ if __name__ == '__main__':
 
     rospy.Subscriber(camera_info, CameraInfo, camera_info_callback, queue_size=10)
     rospy.Subscriber(image_topic, Image, image_callback, queue_size=10)
-    tf_pub = rospy.Publisher("/tf2", TFMessage, queue_size=10)
+    tf_pub = rospy.Publisher("/tf", TFMessage, queue_size=10)
     image_pub = rospy.Publisher("/checkerboard_detections_image", Image, queue_size=10)
     rate = rospy.Rate(5)
 
@@ -142,7 +140,7 @@ if __name__ == '__main__':
             image_msg, estimatedPose = estimate_pose(bgrImage, checkerboardSize, gridLength, cameraMatrix, distCoeffs)
             if estimatedPose is None and image_msg is None:
                 rospy.logwarn("Detection failed!")
-                time.sleep(0.1)
+                time.sleep(1)
 
             else:
                 image_pub.publish(image_msg)

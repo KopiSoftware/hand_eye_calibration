@@ -2,8 +2,8 @@
     
     <arg name="image_topic"       default="/camera/color/image_raw"/>
     <arg name="camera_info"       default="/camera/color/camera_info"/> 
-    <arg name="markerX"           default="3"/>
-    <arg name="markerY"           default="3"/>    
+    <arg name="markerX"           default="1"/>
+    <arg name="markerY"           default="1"/>    
     <arg name="markerLength"      default="0.04"/> 
     <arg name="markerSeparation"  default="0.01"/> 
     <arg name="dictionary"        default="20"/>  <!--cv2.aruco.DICT_6X6_250-->

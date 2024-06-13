@@ -10,27 +10,18 @@ import rospy
 import numpy as np
 import cv2
 import transforms3d as tfs
-from geometry_msgs.msg import TwistStamped, Pose
-
+from geometry_msgs.msg import TwistStamped
 from tf2_msgs.msg import TFMessage
 import time
 import yaml
 
-# def get_end2base_mat(pose):
-#     # Calculating the gripper-to-base transformation matrix
-#     tran = np.array((pose.twist.linear.x, pose.twist.linear.y, pose.twist.linear.z))
-#     rot = tfs.euler.euler2mat(pose.twist.angular.x, pose.twist.angular.y, pose.twist.angular.z)
-#     return rot, tran
 
 def get_end2base_mat(pose):
     # Calculating the gripper-to-base transformation matrix
-    tran = np.array((pose.position.x, pose.position.y, pose.position.z))
-    # rot = tfs.euler.euler2mat(pose.orientation.x, pose.orientation.y, pose.orientation.z)
-    rot = tfs.quaternions.quat2mat([pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z])
-    # invert
-    # tran = -np.array(rot).T * tran
-    # rot = np.array(rot).T
+    tran = np.array((pose.twist.linear.x, pose.twist.linear.y, pose.twist.linear.z))
+    rot = tfs.euler.euler2mat(pose.twist.angular.x, pose.twist.angular.y, pose.twist.angular.z)
     return rot, tran
+
 
 def get_target2cam_mat(pose):
     # Calculating the ArUco-target-to-camera transformation matrix
@@ -39,26 +30,31 @@ def get_target2cam_mat(pose):
     rot = tfs.quaternions.quat2mat((pose.rotation.w, pose.rotation.x, pose.rotation.y, pose.rotation.z))
     return rot, tran
 
+
 def end_pose_callback(pose):
     # Obtaining the pose of the end-effector
     global end_pose
     if pose is None:
         rospy.logwarn("No robot pose data!")
+
     else:
         end_pose = pose
-    
+
+
 def target_pose_callback(pose):
     # Acquiring the pose of the marker
     global target_pose
     if pose is None:
         rospy.logwarn("No ArUco or AprilTag data!")
+
     else:
         target_pose = pose
 
+
 if __name__ == '__main__':
     rospy.init_node('hand_to_eye_calib', anonymous=True)
-    rospy.Subscriber('/rm_driver/Pose_State', Pose, end_pose_callback, queue_size=10)
-    rospy.Subscriber('/tf2', TFMessage, target_pose_callback, queue_size=10)
+    rospy.Subscriber('/rm_driver/Pose_State', TwistStamped, end_pose_callback, queue_size=10)
+    rospy.Subscriber('/tf', TFMessage, target_pose_callback, queue_size=10)
     # Variables
     end_pose = None  # The pose of robot's end
     target_pose = None  # The pose of ArUco target
@@ -91,17 +87,10 @@ if __name__ == '__main__':
                 (R_target2cam, T_target2cam) = get_target2cam_mat(target_pose)
                 R_target2cam_samples.append(R_target2cam)
                 T_target2cam_samples.append(T_target2cam)
-                print("target-to-camera")
-                print(R_target2cam)
-                print(T_target2cam)
-
                 # Recording end-to-base matrix data
                 (R_end2base, T_end2base) = get_end2base_mat(end_pose)
                 R_end2base_samples.append(R_end2base)
                 T_end2base_samples.append(T_end2base)
-                print("end-to-base")
-                print(R_end2base)
-                print(T_end2base)
 
                 sample_number += 1
                 print(f"{sample_number} samples have been recorded")
@@ -115,32 +104,20 @@ if __name__ == '__main__':
                     R_cam2base, T_cam2base = cv2.calibrateHandEye(R_end2base_samples, T_end2base_samples,
                                                                   R_target2cam_samples, T_target2cam_samples,
                                                                   cv2.CALIB_HAND_EYE_TSAI)
-                    
-
-
                     cam2base = np.column_stack((R_cam2base, T_cam2base))
                     cam2base = np.row_stack((cam2base, np.array([0, 0, 0, 1])))
-
-                    print("="*60)
-                    print("R_cam2end")
-                    print("Transform:")
                     print(cam2base)  # Transformation matrix
                     R_cam2base_quaternions = tfs.quaternions.mat2quat(R_cam2base)
                     cam2base_quaternions = np.concatenate((T_cam2base.reshape(3),
                                                            R_cam2base_quaternions.reshape(4)), axis=0)
-                    print("Quaternions:")
                     print(cam2base_quaternions.tolist())  # Quaternions
-
-                    R_cam2base_euler = tfs.euler.mat2euler(R_cam2base)
-                    print("Euler angles:")
-                    print(R_cam2base_euler[0]/np.pi*180, R_cam2base_euler[1]/np.pi*180, R_cam2base_euler[2]/np.pi*180)
 
             elif command == 's':
                 if cam2base is None:
                     rospy.logwarn("No result to save!")
 
                 else:
-                    with open('./camera_to_base_matrix.yaml', 'w', encoding='utf-8') as f:
+                    with open('../yaml/camera_to_base_matrix.yaml', 'w', encoding='utf-8') as f:
                         yaml.dump(data=cam2base.tolist(), stream=f)
                     print("Successfully save the matrix")
                     break
