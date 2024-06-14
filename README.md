@@ -1,5 +1,19 @@
 # Hand-Eye Calibration
 
+**This repository branches from  original [HenryWJL/hand_eye_calibration ](https://github.com/HenryWJL/hand_eye_calibration) , aiming at adopting Realman arm and fixing bugs.**
+
+
+
+**What we do: **
+
+- Jaka is replaced with the topic of REALMAN topic, and thus,  the receiving message type is  geometry_msgs.msg.Pose instead.
+- Checkerboard pose publishment is mixed with the same topic '\tf'. Now we changed it with '\tf2' to avoid mis-subscription.
+- Extra results forms, including rotation matrix, quaternions and Euler angles, will be displayed at the end.
+
+
+
+
+
 This package is used for hand-eye calibration. **Intel Realsense D455** camera and **JAKA MiniCobo** manipulator are required.
 
 ## Usage
@@ -20,7 +34,7 @@ roslaunch realsense2_camera rs_camera.launch
 - Checkerboard
 ```bash
 roslaunch hand_eye_calibration checkerboard_start.launch
-```  
+```
 - Single ArUco marker
 ```bash
 roslaunch hand_eye_calibration aruco_single_start.launch
@@ -52,6 +66,7 @@ There are two options for hand-eye calibration: manual and automatic (without hu
 rosrun hand_eye_calibration hand_to_eye_calib.py
 ```
 - Automatic
+
 ```bash
 rosrun hand_eye_calibration automatic_hand_to_eye_calib.py
 ```
